@@ -1,1 +1,1 @@
-social media project
+a simple social media project

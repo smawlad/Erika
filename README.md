@@ -1,1 +1,1 @@
-a simple social media project
+a simple social network

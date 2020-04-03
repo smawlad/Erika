@@ -6,9 +6,8 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `User`;
 CREATE TABLE `User` (
-	`UserID` INT NOT NULL AUTO_INCREMENT,
-    `Username` VARCHAR(10) NOT NULL,
-    `Password` VARCHAR(15) NOT NULL,
+    `UserID` VARCHAR(10) NOT NULL,
+    `Password` VARCHAR(255) NOT NULL,
     `BirthYear` INT NOT NULL,
     `BirthMonth` INT NOT NULL,
     `BirthDay` INT NOT NULL,
@@ -22,7 +21,7 @@ CREATE TABLE `Post` (
     `Type` ENUM ('Text', 'Image', 'Both') NOT NULL,
     `Body` VARCHAR(1000) NOT NULL,
     `ImageURL` VARCHAR(255) DEFAULT NULL,
-    `CreatedBy` INT NOT NULL,
+    `CreatedBy` VARCHAR(10) NOT NULL,
     `YearCreated` INT NOT NULL,
     `MonthCreated` INT NOT NULL,
     `DayCreated` INT NOT NULL,
@@ -36,11 +35,11 @@ CREATE TABLE `Topic` (
     PRIMARY KEY	(`TopicID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-DROP TABLE IF EXISTS `Group`;
-CREATE TABLE `Group` (
+DROP TABLE IF EXISTS `UserGroup`;
+CREATE TABLE `UserGroup` (
 	`GroupID` VARCHAR(255) NOT NULL,
     `About` VARCHAR(255) NOT NULL,
-    `CreatedBy` INT NOT NULL,
+    `CreatedBy` VARCHAR(10) NOT NULL,
     PRIMARY KEY	(`GroupID`),
     FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -48,8 +47,8 @@ CREATE TABLE `Group` (
 DROP TABLE IF EXISTS `Message`;
 CREATE TABLE `Message` (
 	`MessageID` INT NOT NULL AUTO_INCREMENT,
-    `From` INT NOT NULL,
-    `To` INT NOT NULL,
+    `From` VARCHAR(10) NOT NULL,
+    `To` VARCHAR(10) NOT NULL,
     `Body` VARCHAR(1000) NOT NULL,
     `YearSent` INT NOT NULL,
     `MonthSent` INT NOT NULL,
@@ -61,8 +60,8 @@ CREATE TABLE `Message` (
 
 DROP TABLE IF EXISTS `UserFollowsUser`;
 CREATE TABLE `UserFollowsUser` (
-	`FollowerID` INT NOT NULL,
-    `FollowingID` INT NOT NULL,
+	`FollowerID` VARCHAR(10) NOT NULL,
+    `FollowingID` VARCHAR(10) NOT NULL,
     `LastReadPost` INT DEFAULT NULL,
     PRIMARY KEY (`FollowerID`, `FollowingID`),
     FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`),
@@ -72,7 +71,7 @@ CREATE TABLE `UserFollowsUser` (
 
 DROP TABLE IF EXISTS `UserFollowsTopic`;
 CREATE TABLE `UserFollowsTopic` (
-	`UserID` INT NOT NULL,
+	`UserID` VARCHAR(10) NOT NULL,
     `TopicID` VARCHAR(255) NOT NULL,
     `LastReadPost` INT DEFAULT NULL,
     PRIMARY KEY (`UserID`, `TopicID`),
@@ -83,7 +82,7 @@ CREATE TABLE `UserFollowsTopic` (
 
 DROP TABLE IF EXISTS `UserJoinsGroup`;
 CREATE TABLE `UserJoinsGroup` (
-	`UserID` INT NOT NULL,
+	`UserID` VARCHAR(10) NOT NULL,
     `GroupID` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`UserID`, `GroupID`),
     FOREIGN KEY (`UserID`) REFERENCES User(`UserID`),
@@ -92,8 +91,8 @@ CREATE TABLE `UserJoinsGroup` (
 
 DROP TABLE IF EXISTS `UserMessagesUser`;
 CREATE TABLE `UserMessagesUser` (
-	`FollowerID` INT NOT NULL,
-    `FollowingID` INT NOT NULL,
+	`FollowerID` VARCHAR(10) NOT NULL,
+    `FollowingID` VARCHAR(10) NOT NULL,
     `LastReadMessage` INT NOT NULL,
     PRIMARY KEY (`FollowerID`, `FollowingID`),
     FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`),
@@ -103,7 +102,7 @@ CREATE TABLE `UserMessagesUser` (
 
 DROP TABLE IF EXISTS `UserReactsToPost`;
 CREATE TABLE `UserReactsToPost` (
-	`UserID` INT NOT NULL,
+	`UserID` VARCHAR(10) NOT NULL,
     `PostID` INT NOT NULL,
     `Reaction` ENUM('Like', 'Dislike', 'Love', 'Funny', 'Sad', 'WTF') DEFAULT NULL,
     PRIMARY KEY (`UserID`, `PostID`),

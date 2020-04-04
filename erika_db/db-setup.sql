@@ -86,7 +86,7 @@ CREATE TABLE `UserJoinsGroup` (
     `GroupID` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`UserID`, `GroupID`),
     FOREIGN KEY (`UserID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`GroupID`) REFERENCES `Group`(`GroupID`)
+    FOREIGN KEY (`GroupID`) REFERENCES `UserGroup`(`GroupID`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserMessagesUser`;

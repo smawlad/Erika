@@ -1,3 +1,4 @@
 *.docx
 *.pyc
 hash_pass.py
+.vscode/

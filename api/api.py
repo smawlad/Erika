@@ -111,15 +111,28 @@ def get_topics():
         content = {}
     return jsonify(payload)
 
+@app.route('/api/v1/user/<user_id>/topics/following', methods=['GET'])
+def get_topics_you_follow(user_id):
+    query = "select TopicID from UserFollowsTopic where FollowerID=" + user_id
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        topic_id = rv[0]
+        content = {'TopicID': topic_id}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
+
 @app.route('/api/v1/topic/<topic_id>/follow', methods=['POST'])
 def follow_topic(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
         return "You can't follow a topic that doesn't exist!"
-    elif does_tuple_exist("UserFollowsTopic", ["TopicID", "UserID"], [topic_id, repr(input_json['UserID'])]):
+    elif does_tuple_exist("UserFollowsTopic", ["TopicID", "FollowerID"], [topic_id, repr(input_json['UserID'])]):
         return "You are already following this topic!"
     user_follows_topic_tuple = (input_json['UserID'], topic_id.replace("'",""))
-    query = "insert into UserFollowsTopic (UserID, TopicID) VALUES {}".format(user_follows_topic_tuple)
+    query = "insert into UserFollowsTopic (FollowerID, TopicID) VALUES {}".format(user_follows_topic_tuple)
     execute_and_commit(query)
     return 'OK'
 
@@ -128,9 +141,9 @@ def unfollow_topic(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
         return "You can't unfollow a topic that doesn't exist!"
-    elif not does_tuple_exist("UserFollowsTopic", ["TopicID", "UserID"], [topic_id, repr(input_json['UserID'])]):
+    elif not does_tuple_exist("UserFollowsTopic", ["TopicID", "FollowerID"], [topic_id, repr(input_json['UserID'])]):
         return "You already unfollowed this topic!"
-    query = "delete from UserFollowsTopic where UserID={} and TopicID={}".format(repr(input_json['UserID']), topic_id)
+    query = "delete from UserFollowsTopic where FollowerID={} and TopicID={}".format(repr(input_json['UserID']), topic_id)
     execute_and_commit(query)
     return 'OK'
 
@@ -184,6 +197,17 @@ def get_new_posts_by_user_that_you_follow(user_id):
         return "User doesn't exist!"
     pass
 
+@app.route('/api/v1/user/<user_id>/posts/lastread', methods=['POST'])
+def update_last_read_post_by_user_you_follow(user_id):
+    input_json = request.get_json(force=True)
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "User doesn't exist!"
+    elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
+        return "You don't follow this user!"
+    query = "update UserFollowsUser set LastReadPost={} where FollowerID={} and FollowingID={}".format(input_json['PostID'], repr(input_json['FollowerID']), user_id)
+    execute_and_commit(query)
+    return 'OK'
+
 @app.route('/api/v1/topic/<topic_id>/posts/<post_id>', methods=['GET'])
 def get_post_in_topic(topic_id, post_id):
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
@@ -220,6 +244,17 @@ def get_new_posts_in_topic_that_you_follow(topic_id):
     if not does_tuple_exist("Topic", ["Topic"], [topic_id]):
         return "Topic doesn't exist!"
     pass
+
+@app.route('/api/v1/topic/<topic_id>/posts/lastread', methods=['POST'])
+def update_last_read_post_in_topic_you_follow(topic_id):
+    input_json = request.get_json(force=True)
+    if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
+        return "Topic doesn't exist!"
+    elif not does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID"], [repr(input_json['UserID']), topic_id]):
+        return "You don't follow this topic!"
+    query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(input_json['PostID'], repr(input_json['UserID']), topic_id)
+    execute_and_commit(query)
+    return 'OK'
 
 @app.route('/api/v1/post', methods=['POST'])
 def create_post():
@@ -372,6 +407,33 @@ def leave_group(group_id):
     execute_and_commit(query)
     return 'OK'
 
+@app.route('/api/v1/user/<user_id>/message', methods=['POST'])
+def message_user(user_id):   
+    input_json = request.get_json(force=True)
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "You can't message a user who doesn't exist!"
+    elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['SenderID']), user_id]):
+        return "You can't message a user you don't follow!"
+
+    # create a conversation between users if it doesn't already exist
+    if does_tuple_exist("Conversation", ["User1", "User2"], [repr(input_json['SenderID']), user_id]) \
+        or does_tuple_exist("Conversation", ["User1", "User2"], [user_id, repr(input_json['SenderID'])]):
+        query = "select ConversationID from Conversation where User1={} and User2={} or User1={} and User2={}".format(user_id, repr(input_json['SenderID']), repr(input_json['SenderID']), user_id)
+    else:
+        conversation_tuple = (input_json['SenderID'], user_id.replace("'",""))
+        query = "insert into Conversation (User1, User2) VALUES {}".format(conversation_tuple)
+        execute_and_commit(query)
+        query = "select max(ConversationID) from Conversation"
+
+    rv = select_rows(query)
+    conversation_id = rv[0][0]
+    # now send the actual message
+    split_date_created = split_date(input_json['DateSent'])
+    message_tuple = (conversation_id, input_json['SenderID'], input_json['Body'], split_date_created[2], split_date_created[1], split_date_created[0])
+    query = '''insert into Message (ConversationID, SenderID, Body, YearSent, MonthSent, DaySent) VALUES {}'''.format(message_tuple)
+    execute_and_commit(query)
+    return 'OK'
+
 def select_rows(query):
     cur = mysql.connection.cursor()
     cur.execute(query)
@@ -385,22 +447,14 @@ def execute_and_commit(query):
     mysql.connection.commit()
     cur.close()
 
-# def get_tuples(table, pks, pk_vals):
-#     tuple_list = []
-#     for pk, pk_val in zip(pks, pk_vals):
-#         query = "select * from {} where {}={}".format(table, pk, pk_val)
-#         rv = select_rows(query)
-#         tuple_list.append(rv)
-#     return tuple_list
-
-def does_tuple_exist(table, pks, pk_vals):
+def does_tuple_exist(table, keys, key_vals):
     condition = ""
-    if len(pks) == 1:
-        condition = pks[0] + "=" + pk_vals[0]
+    if len(keys) == 1:
+        condition = keys[0] + "=" + key_vals[0]
     else:
-        for pk, pk_val in zip(pks, pk_vals):
-            condition += pk + "=" + pk_val
-            if pk == pks[len(pks) - 1]:
+        for key, key_val in zip(keys, key_vals):
+            condition += key + "=" + key_val
+            if key == keys[len(keys) - 1]:
                 break
             else:               
                 condition += " and "

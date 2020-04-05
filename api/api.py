@@ -77,7 +77,7 @@ def get_followers(user_id):
     payload = []
     content = {}
     for rv in rvs:
-        follower_id = rv
+        follower_id = rv[0]
         content = {'FollowerID': follower_id}
         payload.append(content)
         content = {}
@@ -92,73 +92,11 @@ def get_following(user_id):
     payload = []
     content = {}
     for rv in rvs:
-        following_id = rv
+        following_id = rv[0]
         content = {'FollowingID': following_id}
         payload.append(content)
         content = {}
     return jsonify(payload)
-
-@app.route('/api/v1/user/<user_id>/posts/follow', methods=['GET'])
-def get_posts_by_user_that_you_follow(user_id):
-    if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
-    input_json = request.get_json(force=True)
-    pass
-
-@app.route('/api/v1/user/<user_id>/posts', methods=['GET'])
-def get_posts_by_user(user_id):
-    if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
-    query = "select * from Post where CreatedBy =" + user_id
-    rvs = select_rows(query)
-    payload = []
-    content = {}
-    for rv in rvs:
-        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv
-        date_created = create_date_str(year_created, month_created, day_created)
-        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
-        payload.append(content)
-        content = {}
-    return jsonify(payload)
-
-@app.route('/api/v1/user/<user_id>/post/<post_id>', methods=['GET'])
-def get_post_by_user(user_id, post_id):
-    if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
-    elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post doesn't exist!"
-    rv = select_rows("select * from Post where CreatedBy =" + user_id + " and " + " PostID =" + post_id)
-    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv[0]
-    date_created = create_date_str(year_created, month_created, day_created)
-    payload = []
-    content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
-    payload.append(content)
-    return jsonify(payload)
-
-@app.route('/api/v1/topic/<topic_id>/posts', methods=['GET'])
-def get_posts_in_topic(topic_id):
-    if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "Topic doesn't exist!"
-    query = "select * from Post where CreatedBy =" + user_id
-    rvs = select_rows(query)
-    payload = []
-    content = {}
-    for rv in rvs:
-        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv
-        date_created = create_date_str(year_created, month_created, day_created)
-        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
-        payload.append(content)
-        content = {}
-    return jsonify(payload)
-
-@app.route('/api/v1/topic/<topic_id>/posts/<post_id>', methods=['GET'])
-def get_post_in_topic(topic_id, post_id):
-    if not does_tuple_exist("Topic", ["Topic"], [topic_id]):
-        return "Topic doesn't exist!"
-    elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post doesn't exist!"
-    input_json = request.get_json(force=True)
-    pass
 
 @app.route('/api/v1/topics', methods=['GET'])
 def get_topics():
@@ -167,7 +105,7 @@ def get_topics():
     payload = []
     content = {}
     for rv in rvs:
-        topic_id = rv
+        topic_id = rv[0]
         content = {'TopicID': topic_id}
         payload.append(content)
         content = {}
@@ -196,26 +134,119 @@ def unfollow_topic(topic_id):
     execute_and_commit(query)
     return 'OK'
 
+@app.route('/api/v1/post/<post_id>', methods=['GET'])
+def get_post(post_id):
+    if not does_tuple_exist("Post", ["PostID"], [post_id]):
+        return "Post doesn't exist!"
+    query = "select PostID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated from Post where PostID =" + post_id
+    rv = select_rows(query)
+    post_id, type_post, body, image_url, created_by, created_year, created_month, created_day = rv[0]
+    date_created = create_date_str(created_year, created_month, created_day)
+    payload = []
+    content = {'PostID': post_id, 'Type': type_post, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created}
+    payload.append(content)
+    return jsonify(payload)
+
+@app.route('/api/v1/user/<user_id>/posts/<post_id>', methods=['GET'])
+def get_post_by_user(user_id, post_id):
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "User doesn't exist!"
+    elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
+        return "Post doesn't exist!"
+    query = "select * from Post where CreatedBy={} and PostID={}".format(user_id, post_id)
+    rv = select_rows(query)
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv[0]
+    date_created = create_date_str(year_created, month_created, day_created)
+    payload = []
+    content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+    payload.append(content)
+    return jsonify(payload)
+    
+@app.route('/api/v1/user/<user_id>/posts', methods=['GET'])
+def get_posts_by_user(user_id):
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "User doesn't exist!"
+    query = "select * from Post where CreatedBy =" + user_id
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv
+        date_created = create_date_str(year_created, month_created, day_created)
+        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
+
+@app.route('/api/v1/user/<user_id>/posts/follow', methods=['GET'])
+def get_new_posts_by_user_that_you_follow(user_id):
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "User doesn't exist!"
+    pass
+
+@app.route('/api/v1/topic/<topic_id>/posts/<post_id>', methods=['GET'])
+def get_post_in_topic(topic_id, post_id):
+    if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
+        return "Topic doesn't exist!"
+    elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
+        return "Post doesn't exist!"
+    query = "select * from Post inner join PostTopic using (PostID) where TopicID={} and PostID={}".format(topic_id, post_id)
+    rv = select_rows(query)
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, topic_id = rv[0]
+    date_created = create_date_str(year_created, month_created, day_created)
+    payload = []
+    content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+    payload.append(content)
+    return jsonify(payload)
+
+@app.route('/api/v1/topic/<topic_id>/posts', methods=['GET'])
+def get_posts_in_topic(topic_id):
+    if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
+        return "Topic doesn't exist!"
+    query = "select * from Post inner join PostTopic using (PostID) where TopicID=" + topic_id
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, topic_id = rv
+        date_created = create_date_str(year_created, month_created, day_created)
+        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
+
+@app.route('/api/v1/topic/<topic_id>/posts/following', methods=['GET'])
+def get_new_posts_in_topic_that_you_follow(topic_id):
+    if not does_tuple_exist("Topic", ["Topic"], [topic_id]):
+        return "Topic doesn't exist!"
+    pass
+
 @app.route('/api/v1/post', methods=['POST'])
 def create_post():
     input_json = request.get_json(force=True)
     split_date_created = split_date(input_json['DateCreated'])
     body = input_json['Body']
     topic_list = extract_topics_from_body(body)
+    # fill in topic table
     if not topic_list:
         return "A post must have at least 1 topic associated with it starting with a '#'! For e.g. #ILoveTopics." 
     for topic in topic_list:
         if not does_tuple_exist("Topic", ["TopicID"], [repr(topic)]):
-            query1 = "insert into Topic (TopicID) VALUES ('{}')".format(topic)
-            execute_and_commit(query1)
+            query = "insert into Topic (TopicID) VALUES ('{}')".format(topic)
+            execute_and_commit(query)
+        else:
+            break
+    # fill in post table
     post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0])
-    query2 = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated) VALUES {}".format(post_tuple)
-    execute_and_commit(query2)
-    query3 = "select PostID from Post where".format(post_tuple)
+    query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated) VALUES {}".format(post_tuple)
+    execute_and_commit(query)
+    # fill in table that associates topics with posts, the most recent post is the one just created
+    query = "select max(PostID) from Post"
+    rv = select_rows(query)
     for topic in topic_list:
-        post_topic_tuple = (post_id, topic)
-        query4 = "insert into PostTopic (PostID, TopicID) VALUES {}".format(post_topic_tuple)
-        execute_and_commit(query4)
+        post_topic_tuple = (rv[0][0], topic)
+        query = "insert into PostTopic (PostID, TopicID) VALUES {}".format(post_topic_tuple)
+        execute_and_commit(query)
     return 'OK'
 
 @app.route('/api/v1/post/<post_id>', methods=['DELETE'])
@@ -253,28 +284,31 @@ def react_to_post(post_id):
         query = "update UserReactsToPost set Reaction='{}' where UserID='{}' and PostID='{}'".format(input_json['Reaction'], input_json['UserID'], post_id)
     else:
         user_react_tuple = (input_json['UserID'], post_id, input_json['Reaction'])
-        query = "insert into UserReactsToPost (UserID, PostID, Reaction) VALUES {}".format(user_react_tuple)    
+        query = "insert into UserReactsToPost (UserID, PostID, Reaction) VALUES {}".format(user_react_tuple)   
     execute_and_commit(query)
     return 'OK'
 
 @app.route('/api/v1/post/<post_id>/respond', methods=['POST'])
 def respond_to_post(post_id):
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
-        return "Post doesn't!"
+        return "Post doesn't exist!"
     input_json = request.get_json(force=True)
     split_date_created = split_date(input_json['DateCreated'])
     body = input_json['Body']
-    # topic_list = extract_topics_from_body(body)
-    # if not topic_list:
-    #     return "A post must have at least 1 topic associated with it starting with a '#'! For e.g. #ILoveTopics." 
-    # for topic in topic_list:
-    #     if not does_tuple_exist("Topic", ["TopicID"], [repr(topic)]):
-    #         query = "insert into Topic (TopicID) VALUES ('{}')".format(topic)
-    #         execute_and_commit(query)
     post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0])
     query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated) VALUES {}".format(post_tuple)
     execute_and_commit(query)
-    post_response_tuple = (post_id.replace("'",""), response_id)
+    # fill in table that associates topics with posts, the most recent post is the one just created, responses inherit the topic of their parent
+    query = "select max(PostID) from Post"
+    rv1 = select_rows(query)
+    query = "select TopicID from PostTopic where PostID=" + post_id
+    rv2 = select_rows(query)
+    for rv in rv2:
+        post_topic_tuple = (rv1[0][0], rv[0])
+        query = "insert into PostTopic (PostID, TopicID) VALUES {}".format(post_topic_tuple)
+        execute_and_commit(query)
+    # fill in response table
+    post_response_tuple = (post_id, rv1[0][0])
     query = "insert into PostResponse (PostID, ResponseID) VALUES {}".format(post_response_tuple)
     execute_and_commit(query)
     return 'OK'
@@ -351,27 +385,27 @@ def execute_and_commit(query):
     mysql.connection.commit()
     cur.close()
 
+# def get_tuples(table, pks, pk_vals):
+#     tuple_list = []
+#     for pk, pk_val in zip(pks, pk_vals):
+#         query = "select * from {} where {}={}".format(table, pk, pk_val)
+#         rv = select_rows(query)
+#         tuple_list.append(rv)
+#     return tuple_list
+
 def does_tuple_exist(table, pks, pk_vals):
     condition = ""
-    # print(table)
-    # print(pks)
-    # print(pk_vals)
     if len(pks) == 1:
         condition = pks[0] + "=" + pk_vals[0]
     else:
         for pk, pk_val in zip(pks, pk_vals):
             condition += pk + "=" + pk_val
-            #print(condition)
             if pk == pks[len(pks) - 1]:
                 break
             else:               
                 condition += " and "
     query = "select * from {} where {}".format(table, condition)
-    # print(query)
-    cur = mysql.connection.cursor()
-    cur.execute(query)
-    rv = cur.fetchall()
-    cur.close()
+    rv = select_rows(query)
     if not rv:
         return False
     return True
@@ -397,10 +431,7 @@ def extract_topics_from_body(body):
 
 
 def create_date_str(year, month, day):
-    dd = str(day)
-    mm = str(month)
-    yyyy = str(year)
-    return dd + '/' + mm + '/' + yyyy
+    return str(day) + '/' + str(month) + '/' + str(year)
 
 def split_date(date):
     date_arr = date.split('/')

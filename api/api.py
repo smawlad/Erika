@@ -13,10 +13,17 @@ app.config['MYSQL_DB'] = 'ErikaDB'
 
 mysql = MySQL(app)
 
+@app.route('/api/v1/user/login', methods=['POST'])
+def login():
+    input_json = request.get_json(force=True)
+    if not does_tuple_exist("User", ["UserID", "Password"], [repr(input_json['UserID']), repr(hash_password(input_json['Password']))]):
+        return "Username or password is incorrect."
+    return 'OK'
+
 @app.route('/api/v1/user/<user_id>', methods=['GET'])
 def get_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist! Please create an account."
     query = "select UserID, BirthYear, BirthMonth, BirthDay, Bio from User where UserID =" + user_id
     rv = select_rows(query)
     user_id, birth_year, birth_month, birth_day, bio = rv[0]
@@ -41,7 +48,7 @@ def create_user():
 def delete_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
         return "User already deleted!"
-    query = 'delete from User where UserID=' + user_id
+    query = "delete from User where UserID=" + user_id
     execute_and_commit(query)
     return 'User successfully deleted!'
 

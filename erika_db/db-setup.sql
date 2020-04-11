@@ -26,7 +26,7 @@ CREATE TABLE `Post` (
     `MonthCreated` INT NOT NULL,
     `DayCreated` INT NOT NULL,
     PRIMARY KEY	(`PostID`),
-    FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`)
+    FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `Topic`;
@@ -41,7 +41,7 @@ CREATE TABLE `UserGroup` (
     `About` VARCHAR(255) NOT NULL,
     `CreatedBy` VARCHAR(10) NOT NULL,
     PRIMARY KEY	(`GroupID`),
-    FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`)
+    FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `Conversation`;
@@ -49,7 +49,9 @@ CREATE TABLE `Conversation` (
 	`ConversationID` INT NOT NULL AUTO_INCREMENT,
 	`User1` VARCHAR(10) NOT NULL,
     `User2` VARCHAR(10) NOT NULL,
-    PRIMARY KEY (`ConversationID`)
+    PRIMARY KEY (`ConversationID`),
+    FOREIGN KEY (`User1`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`User2`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 # use MyISAM engine it allows AUTO_INCREMENT by group, see https://dev.mysql.com/doc/refman/8.0/en/example-auto-increment.html
@@ -63,8 +65,8 @@ CREATE TABLE `Message` (
     `MonthSent` INT NOT NULL,
     `DaySent` INT NOT NULL,
     PRIMARY KEY	(`ConversationID`, `MessageID`),
-    FOREIGN KEY (`SenderID`) REFERENCES User(`UserID`),
-    FOREIGN KEY(`ConversationID`) REFERENCES Conversation(`ConversationID`)
+    FOREIGN KEY (`SenderID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY(`ConversationID`) REFERENCES Conversation(`ConversationID`) ON DELETE CASCADE
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserFollowsUser`;
@@ -73,9 +75,9 @@ CREATE TABLE `UserFollowsUser` (
     `FollowingID` VARCHAR(10) NOT NULL,
     `LastReadPost` INT DEFAULT NULL,
     PRIMARY KEY (`FollowerID`, `FollowingID`),
-    FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`FollowingID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`)
+    FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`FollowingID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserFollowsTopic`;
@@ -84,9 +86,9 @@ CREATE TABLE `UserFollowsTopic` (
     `TopicID` VARCHAR(255) NOT NULL,
     `LastReadPost` INT DEFAULT NULL,
     PRIMARY KEY (`FollowerID`, `TopicID`),
-    FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`),
-    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`)
+    FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`) ON DELETE CASCADE,
+    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserJoinsGroup`;
@@ -94,8 +96,8 @@ CREATE TABLE `UserJoinsGroup` (
 	`UserID` VARCHAR(10) NOT NULL,
     `GroupID` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`UserID`, `GroupID`),
-    FOREIGN KEY (`UserID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`GroupID`) REFERENCES `UserGroup`(`GroupID`)
+    FOREIGN KEY (`UserID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`GroupID`) REFERENCES `UserGroup`(`GroupID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserReactsToPost`;
@@ -104,8 +106,8 @@ CREATE TABLE `UserReactsToPost` (
     `PostID` INT NOT NULL,
     `Reaction` ENUM('Like', 'Dislike', 'Love', 'Funny', 'Sad', 'WTF') DEFAULT NULL,
     PRIMARY KEY (`UserID`, `PostID`),
-    FOREIGN KEY (`UserID`) REFERENCES User(`UserID`),
-    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`)
+    FOREIGN KEY (`UserID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
+    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `PostResponse`;
@@ -113,8 +115,8 @@ CREATE TABLE `PostResponse` (
 	`PostID` INT NOT NULL,
     `ResponseID` INT NOT NULL,
     PRIMARY KEY (`PostID`, `ResponseID`),
-    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`),
-    FOREIGN KEY (`ResponseID`) REFERENCES Post(`PostID`)
+    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`) ON DELETE CASCADE,
+    FOREIGN KEY (`ResponseID`) REFERENCES Post(`PostID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `PostTopic`;
@@ -122,7 +124,7 @@ CREATE TABLE `PostTopic` (
 	`PostID` INT NOT NULL,
     `TopicID` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`PostID`, `TopicID`),
-    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`),
-    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`)
+    FOREIGN KEY (`PostID`) REFERENCES Post(`PostID`) ON DELETE CASCADE,
+    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 

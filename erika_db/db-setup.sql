@@ -25,6 +25,9 @@ CREATE TABLE `Post` (
     `YearCreated` INT NOT NULL,
     `MonthCreated` INT NOT NULL,
     `DayCreated` INT NOT NULL,
+    `HourCreated` INT NOT NULL,
+    `MinuteCreated` INT NOT NULL,
+    `SecondCreated` INT NOT NULL,
     PRIMARY KEY	(`PostID`),
     FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -64,6 +67,9 @@ CREATE TABLE `Message` (
     `YearSent` INT NOT NULL,
     `MonthSent` INT NOT NULL,
     `DaySent` INT NOT NULL,
+    `HourSent` INT NOT NULL,
+    `MinuteSent` INT NOT NULL,
+    `SecondSent` INT NOT NULL,
     PRIMARY KEY	(`ConversationID`, `MessageID`),
     FOREIGN KEY (`SenderID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
     FOREIGN KEY(`ConversationID`) REFERENCES Conversation(`ConversationID`) ON DELETE CASCADE

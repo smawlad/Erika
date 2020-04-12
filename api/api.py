@@ -17,13 +17,13 @@ mysql = MySQL(app)
 def login():
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID", "Password"], [repr(input_json['UserID']), repr(hash_password(input_json['Password']))]):
-        return "Username or password is incorrect."
+        return "Username or password is incorrect.", 400
     return 'OK'
 
 @app.route('/api/v1/user/<user_id>', methods=['GET'])
 def get_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist! Please create an account."
+        return "User doesn't exist!", 400
     query = "select UserID, BirthYear, BirthMonth, BirthDay, Bio from User where UserID =" + user_id
     rv = select_rows(query)
     user_id, birth_year, birth_month, birth_day, bio = rv[0]
@@ -37,7 +37,7 @@ def get_user(user_id):
 def create_user():
     input_json = request.get_json(force=True)
     if does_tuple_exist("User", ["UserID"], [repr(input_json['UserID'])]):
-        return "User already exists!"
+        return "User already exists!", 400
     split_birthday = split_date(input_json['Birthday'])
     user_tuple = (input_json['UserID'], hash_password(input_json['Password']), split_birthday[2], split_birthday[1], split_birthday[0], input_json['Bio'])
     query = "insert into User (UserID, Password, BirthYear, BirthMonth, BirthDay, Bio) VALUES {}".format(user_tuple)
@@ -47,18 +47,18 @@ def create_user():
 @app.route('/api/v1/user/<user_id>', methods=['DELETE'])
 def delete_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User already deleted!"
+        return "User already deleted!", 400
     query = "delete from User where UserID=" + user_id
     execute_and_commit(query)
-    return 'User successfully deleted!'
+    return 'OK'
 
 @app.route('/api/v1/user/<user_id>/follow', methods=['POST'])
 def follow_user(user_id):   
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "You can't follow a user who doesn't exist!"
+        return "You can't follow a user who doesn't exist!", 400
     elif does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
-        return "You already followed this user!"
+        return "You already followed this user!", 400
     user_follows_user_tuple = (input_json['FollowerID'], user_id.replace("'",""))
     query = "insert into UserFollowsUser (FollowerID, FollowingID) VALUES {}".format(user_follows_user_tuple)
     execute_and_commit(query)
@@ -68,9 +68,9 @@ def follow_user(user_id):
 def unfollow_user(user_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "You can't unfollow a user that doesn't exist!"
+        return "You can't unfollow a user that doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
-        return "You already unfollowed this user!"
+        return "You already unfollowed this user!", 400
     query = "delete from UserFollowsUser where FollowerID={} and FollowingID={}".format(repr(input_json['FollowerID']), user_id)
     execute_and_commit(query)
     return 'OK'
@@ -78,7 +78,7 @@ def unfollow_user(user_id):
 @app.route('/api/v1/user/<user_id>/followers', methods=['GET'])
 def get_followers(user_id):   
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     query = "select FollowerID from UserFollowsUser where FollowingID =" + user_id
     rvs = select_rows(query)
     payload = []
@@ -93,7 +93,7 @@ def get_followers(user_id):
 @app.route('/api/v1/user/<user_id>/following', methods=['GET'])
 def get_following(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     query = "select FollowingID from UserFollowsUser where FollowerID =" + user_id
     rvs = select_rows(query)
     payload = []
@@ -135,9 +135,9 @@ def get_topics_you_follow(user_id):
 def follow_topic(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "You can't follow a topic that doesn't exist!"
+        return "You can't follow a topic that doesn't exist!", 400
     elif does_tuple_exist("UserFollowsTopic", ["TopicID", "FollowerID"], [topic_id, repr(input_json['UserID'])]):
-        return "You are already following this topic!"
+        return "You are already following this topic!", 400
     user_follows_topic_tuple = (input_json['UserID'], topic_id.replace("'",""))
     query = "insert into UserFollowsTopic (FollowerID, TopicID) VALUES {}".format(user_follows_topic_tuple)
     execute_and_commit(query)
@@ -147,9 +147,9 @@ def follow_topic(topic_id):
 def unfollow_topic(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "You can't unfollow a topic that doesn't exist!"
+        return "You can't unfollow a topic that doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsTopic", ["TopicID", "FollowerID"], [topic_id, repr(input_json['UserID'])]):
-        return "You already unfollowed this topic!"
+        return "You already unfollowed this topic!", 400
     query = "delete from UserFollowsTopic where FollowerID={} and TopicID={}".format(repr(input_json['UserID']), topic_id)
     execute_and_commit(query)
     return 'OK'
@@ -157,43 +157,63 @@ def unfollow_topic(topic_id):
 @app.route('/api/v1/post/<post_id>', methods=['GET'])
 def get_post(post_id):
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
-        return "Post doesn't exist!"
-    query = "select PostID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated from Post where PostID =" + post_id
+        return "Post doesn't exist!", 400
+    query = "select PostID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated from Post where PostID =" + post_id
     rv = select_rows(query)
-    post_id, type_post, body, image_url, created_by, created_year, created_month, created_day = rv[0]
-    date_created = create_date_str(created_year, created_month, created_day)
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0]
+    date_created = create_date_str(year_created, month_created, day_created)
+    time_created = create_time_str(hour_created, minute_created, second_created)
     payload = []
-    content = {'PostID': post_id, 'Type': type_post, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created}
+    content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated':time_created}
+    payload.append(content)
+    return jsonify(payload)
+
+@app.route('/api/v1/user/<user_id>/posts/lastpost', methods=['GET'])
+def get_last_post_by_user(user_id):
+    if not does_tuple_exist("User", ["UserID"], [user_id]):
+        return "User doesn't exist!", 400
+    query = "select max(PostID) from Post where CreatedBy =" + user_id
+    rv = select_rows(query)
+    post_id = rv[0][0]
+    query = "select PostID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated from Post where PostID =" + str(post_id)
+    rv = select_rows(query)
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0]
+    date_created = create_date_str(year_created, month_created, day_created)
+    time_created = create_time_str(hour_created, minute_created, second_created)
+    payload = []
+    content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
     payload.append(content)
     return jsonify(payload)
 
 @app.route('/api/v1/user/<user_id>/posts/<post_id>', methods=['GET'])
 def get_post_by_user(user_id, post_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post doesn't exist!"
+        return "Post doesn't exist!", 400
     query = "select * from Post where CreatedBy={} and PostID={}".format(user_id, post_id)
     rv = select_rows(query)
-    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv[0]
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0]
     date_created = create_date_str(year_created, month_created, day_created)
+    time_created = create_time_str(hour_created, minute_created, second_created)
     payload = []
-    content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+    content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
     payload.append(content)
     return jsonify(payload)
     
 @app.route('/api/v1/user/<user_id>/posts', methods=['GET'])
 def get_posts_by_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     query = "select * from Post where CreatedBy =" + user_id
     rvs = select_rows(query)
     payload = []
     content = {}
     for rv in rvs:
-        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created = rv
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv
         date_created = create_date_str(year_created, month_created, day_created)
-        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+        time_created = create_time_str(hour_created, minute_created, second_created)
+        content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
         payload.append(content)
         content = {}
     return jsonify(payload)
@@ -201,16 +221,16 @@ def get_posts_by_user(user_id):
 @app.route('/api/v1/user/<user_id>/posts/follow', methods=['GET'])
 def get_new_posts_by_user_that_you_follow(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     pass
 
 @app.route('/api/v1/user/<user_id>/posts/lastread', methods=['POST'])
 def update_last_read_post_by_user_you_follow(user_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!"
+        return "User doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
-        return "You don't follow this user!"
+        return "You don't follow this user!", 400
     query = "update UserFollowsUser set LastReadPost={} where FollowerID={} and FollowingID={}".format(input_json['PostID'], repr(input_json['FollowerID']), user_id)
     execute_and_commit(query)
     return 'OK'
@@ -218,30 +238,32 @@ def update_last_read_post_by_user_you_follow(user_id):
 @app.route('/api/v1/topic/<topic_id>/posts/<post_id>', methods=['GET'])
 def get_post_in_topic(topic_id, post_id):
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "Topic doesn't exist!"
+        return "Topic doesn't exist!", 400
     elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post doesn't exist!"
+        return "Post doesn't exist!", 400
     query = "select * from Post inner join PostTopic using (PostID) where TopicID={} and PostID={}".format(topic_id, post_id)
     rv = select_rows(query)
-    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, topic_id = rv[0]
+    post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created, topic_id = rv[0]
     date_created = create_date_str(year_created, month_created, day_created)
+    time_created = create_time_str(hour_created, minute_created, second_created)
     payload = []
-    content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+    content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
     payload.append(content)
     return jsonify(payload)
 
 @app.route('/api/v1/topic/<topic_id>/posts', methods=['GET'])
 def get_posts_in_topic(topic_id):
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "Topic doesn't exist!"
+        return "Topic doesn't exist!", 400
     query = "select * from Post inner join PostTopic using (PostID) where TopicID=" + topic_id
     rvs = select_rows(query)
     payload = []
     content = {}
     for rv in rvs:
-        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, topic_id = rv
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created, topic_id = rv
         date_created = create_date_str(year_created, month_created, day_created)
-        content = {'PostID': post_id, 'Type': post_type, 'DateCreated': date_created, 'Body': body, 'ImageURL': image_url, 'CreatedBy:': created_by}
+        time_created = create_time_str(hour_created, minute_created, second_created)
+        content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
         payload.append(content)
         content = {}
     return jsonify(payload)
@@ -249,16 +271,16 @@ def get_posts_in_topic(topic_id):
 @app.route('/api/v1/topic/<topic_id>/posts/following', methods=['GET'])
 def get_new_posts_in_topic_that_you_follow(topic_id):
     if not does_tuple_exist("Topic", ["Topic"], [topic_id]):
-        return "Topic doesn't exist!"
+        return "Topic doesn't exist!", 400
     pass
 
 @app.route('/api/v1/topic/<topic_id>/posts/lastread', methods=['POST'])
 def update_last_read_post_in_topic_you_follow(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
-        return "Topic doesn't exist!"
+        return "Topic doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID"], [repr(input_json['UserID']), topic_id]):
-        return "You don't follow this topic!"
+        return "You don't follow this topic!", 400
     query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(input_json['PostID'], repr(input_json['UserID']), topic_id)
     execute_and_commit(query)
     return 'OK'
@@ -267,11 +289,12 @@ def update_last_read_post_in_topic_you_follow(topic_id):
 def create_post():
     input_json = request.get_json(force=True)
     split_date_created = split_date(input_json['DateCreated'])
+    split_time_created = split_time(input_json['TimeCreated'])
     body = input_json['Body']
     topic_list = extract_topics_from_body(body)
     # fill in topic table
     if not topic_list:
-        return "A post must have at least 1 topic associated with it starting with a '#'! For e.g. #ILoveTopics." 
+        return "A post must have at least 1 topic associated with it starting with a '#'! For e.g. #ILoveTopics.", 400 
     for topic in topic_list:
         if not does_tuple_exist("Topic", ["TopicID"], [repr(topic)]):
             query = "insert into Topic (TopicID) VALUES ('{}')".format(topic)
@@ -279,8 +302,8 @@ def create_post():
         else:
             break
     # fill in post table
-    post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0])
-    query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated) VALUES {}".format(post_tuple)
+    post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0], split_time_created[0], split_time_created[1], split_time_created[2])
+    query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated) VALUES {}".format(post_tuple)
     execute_and_commit(query)
     # fill in table that associates topics with posts, the most recent post is the one just created
     query = "select max(PostID) from Post"
@@ -294,7 +317,7 @@ def create_post():
 @app.route('/api/v1/post/<post_id>', methods=['DELETE'])
 def delete_post(post_id):
     if not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post already deleted!"
+        return "Post already deleted!", 400
     query = 'delete from Post where PostID=' + post_id
     execute_and_commit(query)
     return 'OK'
@@ -302,7 +325,7 @@ def delete_post(post_id):
 @app.route('/api/v1/post/<post_id>/react', methods=['GET'])
 def get_reactions_to_post(post_id):
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
-        return "Post doesn't exist!"
+        return "Post doesn't exist!", 400
     query = "select * from UserReactsToPost where PostID =" + post_id
     rvs = select_rows(query)
     payload = []
@@ -319,9 +342,9 @@ def react_to_post(post_id):
     input_json = request.get_json(force=True)
     valid_reactions = ['Like', 'Dislike', 'Love', 'Funny', 'Sad', 'WTF']
     if input_json['Reaction'] not in valid_reactions:
-        return 'Choose a valid reaction: ' + str(valid_reactions)
+        return 'Choose a valid reaction: ' + str(valid_reactions), 400
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
-        return "Post doesn't exist!"
+        return "Post doesn't exist!", 400
     elif does_tuple_exist("UserReactsToPost", ["UserID", "PostID"], [repr(input_json['UserID']), post_id]):
         query = "update UserReactsToPost set Reaction='{}' where UserID='{}' and PostID='{}'".format(input_json['Reaction'], input_json['UserID'], post_id)
     else:
@@ -333,12 +356,13 @@ def react_to_post(post_id):
 @app.route('/api/v1/post/<post_id>/respond', methods=['POST'])
 def respond_to_post(post_id):
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
-        return "Post doesn't exist!"
+        return "Post doesn't exist!", 400
     input_json = request.get_json(force=True)
     split_date_created = split_date(input_json['DateCreated'])
+    split_time_created = split_time(input_json['TimeCreated'])
     body = input_json['Body']
-    post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0])
-    query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated) VALUES {}".format(post_tuple)
+    post_tuple = (input_json['Type'], body, input_json['ImageURL'], input_json['CreatedBy'], split_date_created[2], split_date_created[1], split_date_created[0], split_time_created[0], split_time_created[1], split_time_created[2])
+    query = "insert into Post (Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated) VALUES {}".format(post_tuple)
     execute_and_commit(query)
     # fill in table that associates topics with posts, the most recent post is the one just created, responses inherit the topic of their parent
     query = "select max(PostID) from Post"
@@ -372,7 +396,7 @@ def get_groups():
 def create_group():
     input_json = request.get_json(force=True)
     if does_tuple_exist("UserGroup", ["GroupID"], [repr(input_json['GroupID'])]):
-        return "Group already exists!"
+        return "Group already exists!", 400
     group_tuple = (input_json['GroupID'], input_json['About'], input_json['CreatedBy'])
     user_join_group_tuple = (input_json['CreatedBy'], input_json['GroupID'])
     query1 = "insert into UserGroup (GroupID, About, CreatedBy) VALUES {}".format(group_tuple)
@@ -384,7 +408,7 @@ def create_group():
 @app.route('/api/v1/group/<group_id>', methods=['DELETE'])
 def delete_group(group_id):
     if not does_tuple_exist("UserGroup", ["GroupID"], [group_id]):
-        return "Group already deleted!"
+        return "Group already deleted!", 400
     query = 'delete from UserGroup where GroupID=' + group_id
     execute_and_commit(query)
     return 'OK'
@@ -393,9 +417,9 @@ def delete_group(group_id):
 def join_group(group_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("UserGroup", ["GroupID"], [group_id]):
-        return "Group doesn't exist!"
+        return "Group doesn't exist!", 400
     elif does_tuple_exist("UserJoinsGroup", ["UserID", "GroupID"], [repr(input_json['UserID']), group_id]):
-        return "You already joined this group!"
+        return "You already joined this group!", 400
     input_json = request.get_json(force=True)
     user_join_group_tuple = (input_json['UserID'], group_id.replace("'",""))
     query = "insert into UserJoinsGroup (UserID, GroupID) VALUES {}".format(user_join_group_tuple)
@@ -406,9 +430,9 @@ def join_group(group_id):
 def leave_group(group_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("UserGroup", ["GroupID"], [group_id]):
-        return "Group doesn't exist!"
+        return "Group doesn't exist!", 400
     elif not does_tuple_exist("UserJoinsGroup", ["UserID", "GroupID"], [repr(input_json['UserID']), group_id]):
-        return "You already left this group!"
+        return "You already left this group!", 400
     input_json = request.get_json(force=True)
     query = "delete from UserJoinsGroup where UserID={} and GroupID={}".format(repr(input_json['UserID']), group_id)
     execute_and_commit(query)
@@ -418,9 +442,9 @@ def leave_group(group_id):
 def message_user(user_id):   
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "You can't message a user who doesn't exist!"
+        return "You can't message a user who doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['SenderID']), user_id]):
-        return "You can't message a user you don't follow!"
+        return "You can't message a user you don't follow!", 400
 
     # create a conversation between users if it doesn't already exist
     if does_tuple_exist("Conversation", ["User1", "User2"], [repr(input_json['SenderID']), user_id]) \
@@ -436,8 +460,9 @@ def message_user(user_id):
     conversation_id = rv[0][0]
     # now send the actual message
     split_date_created = split_date(input_json['DateSent'])
-    message_tuple = (conversation_id, input_json['SenderID'], input_json['Body'], split_date_created[2], split_date_created[1], split_date_created[0])
-    query = '''insert into Message (ConversationID, SenderID, Body, YearSent, MonthSent, DaySent) VALUES {}'''.format(message_tuple)
+    split_time_created = split_time(input_json['TimeSent'])
+    message_tuple = (conversation_id, input_json['SenderID'], input_json['Body'], split_date_created[2], split_date_created[1], split_date_created[0], split_time_created[0], split_time_created[1], split_time_created[2])
+    query = '''insert into Message (ConversationID, SenderID, Body, YearSent, MonthSent, DaySent, HourSent, MinuteSent, SecondSent) VALUES {}'''.format(message_tuple)
     execute_and_commit(query)
     return 'OK'
 
@@ -500,6 +525,16 @@ def split_date(date):
     for num_str in date_arr:
         date_arr_int.append(int(num_str))
     return date_arr_int
+
+def create_time_str(hour, minute, second):
+    return str(hour) + ':' + str(minute) + ':' + str(second)
+
+def split_time(time):
+    time_arr = time.split(':')
+    time_arr_int = []
+    for num_str in time_arr:
+        time_arr_int.append(int(num_str))
+    return time_arr_int
 
 def hash_password(text):
     password = text

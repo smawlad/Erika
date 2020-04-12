@@ -392,6 +392,7 @@ class Erika(Cmd):
         Usage:         respond_to_post {postid}
         Description:   Respond to a post.
         """
+        # implement this
         pass
     
     def do_open_link(self, args):

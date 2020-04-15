@@ -387,9 +387,9 @@ class Erika(Cmd):
         else:
             print("Log in to create a post!")
     
-    def do_respond_to_post(self, args):
+    def do_respond_post(self, args):
         """
-        Usage:         respond_to_post {postid}
+        Usage:         respond_post {postid}
         Description:   Respond to a post.
         """
         # implement this

@@ -13,6 +13,10 @@ app.config['MYSQL_DB'] = 'ErikaDB'
 
 mysql = MySQL(app)
 
+# global variables to hold last read posts by user/topic that someone follows, not the best approach but seems to work
+last_read_post_id_user = -1
+last_read_post_id_topic = -1
+
 @app.route('/api/v1/user/login', methods=['POST'])
 def login():
     input_json = request.get_json(force=True)
@@ -205,6 +209,17 @@ def get_post_by_user(user_id, post_id):
 def get_posts_by_user(user_id):
     if not does_tuple_exist("User", ["UserID"], [user_id]):
         return "User doesn't exist!", 400
+    
+    # this is quite hacky...last read posts can surely be implemented in a better way, but for now use this
+    input_json = request.get_json()
+    if input_json:
+        if does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
+            query = "select max(PostID) from Post where CreatedBy =" + user_id
+            rv = select_rows(query)
+            last_read_post_id_user = rv[0][0]
+            query = "update UserFollowsUser set LastReadPost={} where FollowerID={} and FollowingID={}".format(last_read_post_id_user, repr(input_json['FollowerID']), user_id)
+            execute_and_commit(query)
+    
     query = "select * from Post where CreatedBy =" + user_id
     rvs = select_rows(query)
     payload = []
@@ -218,22 +233,40 @@ def get_posts_by_user(user_id):
         content = {}
     return jsonify(payload)
 
-@app.route('/api/v1/user/<user_id>/posts/follow', methods=['GET'])
-def get_new_posts_by_user_that_you_follow(user_id):
-    if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!", 400
-    pass
-
-@app.route('/api/v1/user/<user_id>/posts/lastread', methods=['POST'])
-def update_last_read_post_by_user_you_follow(user_id):
+@app.route('/api/v1/user/<user_id>/posts/unread', methods=['GET'])
+def get_unread_posts_by_user_that_you_follow(user_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("User", ["UserID"], [user_id]):
         return "User doesn't exist!", 400
     elif not does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID"], [repr(input_json['FollowerID']), user_id]):
         return "You don't follow this user!", 400
-    query = "update UserFollowsUser set LastReadPost={} where FollowerID={} and FollowingID={}".format(input_json['PostID'], repr(input_json['FollowerID']), user_id)
+    elif does_tuple_exist("UserFollowsUser", ["FollowerID", "FollowingID", "LastReadPost"], [repr(input_json['FollowerID']), user_id, str(-1)]):
+        query = "select * from Post where CreatedBy =" + user_id
+        rvs = select_rows(query)
+        query = "select max(PostID) from Post where CreatedBy =" + user_id
+    else:
+        query = "select * from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost" 
+        rvs = select_rows(query)
+        if not rvs:
+            return jsonify([])
+        query = "select max(PostID) from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost"
+    
+    # update last read post
+    rv = select_rows(query)    
+    last_read_post_id_user = rv[0][0]
+    query = "update UserFollowsUser set LastReadPost={} where FollowerID={} and FollowingID={}".format(last_read_post_id_user, repr(input_json['FollowerID']), user_id)
     execute_and_commit(query)
-    return 'OK'
+
+    payload = []
+    content = {}
+    for rv in rvs:
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0], rv[1], rv[2], rv[3], rv[4], rv[5], rv[6], rv[7], rv[8], rv[9], rv[10]
+        date_created = create_date_str(year_created, month_created, day_created)
+        time_created = create_time_str(hour_created, minute_created, second_created)
+        content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
 
 @app.route('/api/v1/topic/<topic_id>/posts/<post_id>', methods=['GET'])
 def get_post_in_topic(topic_id, post_id):
@@ -255,6 +288,17 @@ def get_post_in_topic(topic_id, post_id):
 def get_posts_in_topic(topic_id):
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
         return "Topic doesn't exist!", 400
+    
+    # this is quite hacky...last read posts can surely be implemented in a better way, but for now let's keep this
+    input_json = request.get_json()
+    if input_json:
+        if does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID"], [repr(input_json['FollowerID']), topic_id]):
+            query = "select max(PostID) from Post inner join PostTopic using (PostID) where TopicID=" + topic_id
+            rv = select_rows(query)
+            last_read_post_id_topic = rv[0][0]
+            query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(last_read_post_id_topic, repr(input_json['FollowerID']), topic_id)
+            execute_and_commit(query)
+
     query = "select * from Post inner join PostTopic using (PostID) where TopicID=" + topic_id
     rvs = select_rows(query)
     payload = []
@@ -268,22 +312,40 @@ def get_posts_in_topic(topic_id):
         content = {}
     return jsonify(payload)
 
-@app.route('/api/v1/topic/<topic_id>/posts/following', methods=['GET'])
-def get_new_posts_in_topic_that_you_follow(topic_id):
-    if not does_tuple_exist("Topic", ["Topic"], [topic_id]):
-        return "Topic doesn't exist!", 400
-    pass
-
-@app.route('/api/v1/topic/<topic_id>/posts/lastread', methods=['POST'])
-def update_last_read_post_in_topic_you_follow(topic_id):
+@app.route('/api/v1/topic/<topic_id>/posts/unread', methods=['GET'])
+def get_unread_posts_in_topic_that_you_follow(topic_id):
     input_json = request.get_json(force=True)
     if not does_tuple_exist("Topic", ["TopicID"], [topic_id]):
         return "Topic doesn't exist!", 400
-    elif not does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID"], [repr(input_json['UserID']), topic_id]):
+    elif not does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID"], [repr(input_json['FollowerID']), topic_id]):
         return "You don't follow this topic!", 400
-    query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(input_json['PostID'], repr(input_json['UserID']), topic_id)
+    elif does_tuple_exist("UserFollowsTopic", ["FollowerID", "TopicID", "LastReadPost"], [repr(input_json['FollowerID']), topic_id, str(-1)]):
+        query = "select * from Post inner join PostTopic using (PostID) where TopicID=" + topic_id
+        rvs = select_rows(query)
+        query = "select max(PostID) from PostTopic where TopicID =" + topic_id
+    else:
+        query = "select * from Post inner join PostTopic using(PostID) inner join UserFollowsTopic using(TopicID) where PostID > LastReadPost" 
+        rvs = select_rows(query)
+        if not rvs:
+            return jsonify([])
+        query = "select max(PostID) from PostTopic inner join UserFollowsTopic on PostTopic.TopicID = UserFollowsTopic.TopicID where PostID > LastReadPost"
+
+    # update last read post
+    rv = select_rows(query)   
+    last_read_post_id_topic = rv[0][0]
+    query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(last_read_post_id_topic, repr(input_json['FollowerID']), topic_id)
     execute_and_commit(query)
-    return 'OK'
+
+    payload = []
+    content = {}
+    for rv in rvs:
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0], rv[1], rv[2], rv[3], rv[4], rv[5], rv[6], rv[7], rv[8], rv[9], rv[10]
+        date_created = create_date_str(year_created, month_created, day_created)
+        time_created = create_time_str(hour_created, minute_created, second_created)
+        content = {'PostID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
 
 @app.route('/api/v1/post', methods=['POST'])
 def create_post():

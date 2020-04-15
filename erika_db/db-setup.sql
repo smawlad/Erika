@@ -79,22 +79,20 @@ DROP TABLE IF EXISTS `UserFollowsUser`;
 CREATE TABLE `UserFollowsUser` (
 	`FollowerID` VARCHAR(10) NOT NULL,
     `FollowingID` VARCHAR(10) NOT NULL,
-    `LastReadPost` INT DEFAULT NULL,
+    `LastReadPost` INT DEFAULT -1,
     PRIMARY KEY (`FollowerID`, `FollowingID`),
     FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
-    FOREIGN KEY (`FollowingID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
-    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`) ON DELETE SET NULL
+    FOREIGN KEY (`FollowingID`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserFollowsTopic`;
 CREATE TABLE `UserFollowsTopic` (
 	`FollowerID` VARCHAR(10) NOT NULL,
     `TopicID` VARCHAR(255) NOT NULL,
-    `LastReadPost` INT DEFAULT NULL,
+    `LastReadPost` INT DEFAULT -1,
     PRIMARY KEY (`FollowerID`, `TopicID`),
     FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
-    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`) ON DELETE CASCADE,
-    FOREIGN KEY (`LastReadPost`) REFERENCES Post(`PostID`) ON DELETE SET NULL
+    FOREIGN KEY (`TopicID`) REFERENCES Topic(`TopicID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 DROP TABLE IF EXISTS `UserJoinsGroup`;

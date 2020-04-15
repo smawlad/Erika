@@ -191,10 +191,8 @@ def get_last_post_by_user(user_id):
 
 @app.route('/api/v1/user/<user_id>/posts/<post_id>', methods=['GET'])
 def get_post_by_user(user_id, post_id):
-    if not does_tuple_exist("User", ["UserID"], [user_id]):
-        return "User doesn't exist!", 400
-    elif not does_tuple_exist("Post", ["PostID"], [repr(post_id)]):
-        return "Post doesn't exist!", 400
+    if not does_tuple_exist("Post", ["PostID", "CreatedBy"], [repr(post_id), user_id]):
+        return "You didn't create this post or it is already deleted!", 400
     query = "select * from Post where CreatedBy={} and PostID={}".format(user_id, post_id)
     rv = select_rows(query)
     post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv[0]
@@ -245,11 +243,11 @@ def get_unread_posts_by_user_that_you_follow(user_id):
         rvs = select_rows(query)
         query = "select max(PostID) from Post where CreatedBy =" + user_id
     else:
-        query = "select * from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost" 
+        query = "select * from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost and FollowingID =" + user_id
         rvs = select_rows(query)
         if not rvs:
             return jsonify([])
-        query = "select max(PostID) from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost"
+        query = "select max(PostID) from Post inner join UserFollowsUser on CreatedBy = FollowingID where PostID > LastReadPost and FollowingID =" + user_id
     
     # update last read post
     rv = select_rows(query)    
@@ -324,14 +322,14 @@ def get_unread_posts_in_topic_that_you_follow(topic_id):
         rvs = select_rows(query)
         query = "select max(PostID) from PostTopic where TopicID =" + topic_id
     else:
-        query = "select * from Post inner join PostTopic using(PostID) inner join UserFollowsTopic using(TopicID) where PostID > LastReadPost" 
+        query = "select PostID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated from Post inner join PostTopic using(PostID) inner join UserFollowsTopic using(TopicID) where PostID > LastReadPost and TopicID =" + topic_id 
         rvs = select_rows(query)
         if not rvs:
             return jsonify([])
-        query = "select max(PostID) from PostTopic inner join UserFollowsTopic on PostTopic.TopicID = UserFollowsTopic.TopicID where PostID > LastReadPost"
+        query = "select max(PostID) from PostTopic inner join UserFollowsTopic on PostTopic.TopicID = UserFollowsTopic.TopicID where PostID > LastReadPost and PostTopic.TopicID =" + topic_id
 
     # update last read post
-    rv = select_rows(query)   
+    rv = select_rows(query)
     last_read_post_id_topic = rv[0][0]
     query = "update UserFollowsTopic set LastReadPost={} where FollowerID={} and TopicID={}".format(last_read_post_id_topic, repr(input_json['FollowerID']), topic_id)
     execute_and_commit(query)
@@ -440,6 +438,23 @@ def respond_to_post(post_id):
     query = "insert into PostResponse (PostID, ResponseID) VALUES {}".format(post_response_tuple)
     execute_and_commit(query)
     return 'OK'
+
+@app.route('/api/v1/post/<post_id>/responses', methods=['GET'])
+def get_responses(post_id):
+    if not does_tuple_exist("Post", ["PostID"], [post_id]):
+        return "Post doesn't exist!", 400
+    query = "select ResponseID, Type, Body, ImageURL, CreatedBy, YearCreated, MonthCreated, DayCreated, HourCreated, MinuteCreated, SecondCreated from Post inner join PostResponse on Post.PostID = PostResponse.ResponseID where PostResponse.PostID=" + post_id
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        post_id, post_type, body, image_url, created_by, year_created, month_created, day_created, hour_created, minute_created, second_created = rv
+        date_created = create_date_str(year_created, month_created, day_created)
+        time_created = create_time_str(hour_created, minute_created, second_created)
+        content = {'ResponseID': post_id, 'Type': post_type, 'Body': body, 'ImageURL': image_url, 'CreatedBy': created_by, 'DateCreated': date_created, 'TimeCreated': time_created}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
 
 @app.route('/api/v1/group', methods=['GET'])
 def get_groups():

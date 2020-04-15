@@ -392,7 +392,7 @@ def get_reactions_to_post(post_id):
     content = {}
     for rv in rvs:
         user_id, post_id, reaction = rv
-        content = {'UserID': user_id, 'PostID': post_id, 'Reaction': reaction}
+        content = {'UserID': user_id, 'Reaction': reaction}
         payload.append(content)
         content = {}
     return jsonify(payload)
@@ -400,8 +400,8 @@ def get_reactions_to_post(post_id):
 @app.route('/api/v1/post/<post_id>/react', methods=['POST'])
 def react_to_post(post_id):
     input_json = request.get_json(force=True)
-    valid_reactions = ['Like', 'Dislike', 'Love', 'Funny', 'Sad', 'WTF']
-    if input_json['Reaction'] not in valid_reactions:
+    valid_reactions = ['Like', 'Dislike', 'Love', 'Funny', 'Sad', 'Wtf']
+    if input_json['Reaction'].capitalize() not in valid_reactions:
         return 'Choose a valid reaction: ' + str(valid_reactions), 400
     if not does_tuple_exist("Post", ["PostID"], [post_id]):
         return "Post doesn't exist!", 400
@@ -411,7 +411,7 @@ def react_to_post(post_id):
         user_react_tuple = (input_json['UserID'], post_id, input_json['Reaction'])
         query = "insert into UserReactsToPost (UserID, PostID, Reaction) VALUES {}".format(user_react_tuple)   
     execute_and_commit(query)
-    return 'OK'
+    return 'OK', 200
 
 @app.route('/api/v1/post/<post_id>/respond', methods=['POST'])
 def respond_to_post(post_id):
@@ -469,6 +469,21 @@ def get_groups():
         content = {}
     return jsonify(payload)
 
+@app.route('/api/v1/group/<group_id>/members', methods=['GET'])
+def get_group_members(group_id):
+    if not does_tuple_exist("UserGroup", ["GroupID"], [group_id]):
+        return "Group doesn't exist!", 400
+    query = "select UserID from UserJoinsGroup inner join User using (UserID) where GroupID={}".format(group_id)
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        user_id = rv
+        content = {'UserID': user_id}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
+
 @app.route('/api/v1/group', methods=['POST'])
 def create_group():
     input_json = request.get_json(force=True)
@@ -484,9 +499,12 @@ def create_group():
 
 @app.route('/api/v1/group/<group_id>', methods=['DELETE'])
 def delete_group(group_id):
+    input_json = request.get_json(force=True)
     if not does_tuple_exist("UserGroup", ["GroupID"], [group_id]):
         return "Group already deleted!", 400
-    query = 'delete from UserGroup where GroupID=' + group_id
+    elif not does_tuple_exist("UserGroup", ["GroupID", "CreatedBy"], [group_id, repr(input_json['UserID'])]):
+        return "You can't delete a group you didn't create!", 400
+    query = 'delete from UserGroup where GroupID={} and CreatedBy={}'.format(group_id, repr(input_json['UserID']))
     execute_and_commit(query)
     return 'OK'
 

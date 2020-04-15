@@ -117,7 +117,6 @@ class Erika(Cmd):
         """
         if len(args) != 0:
             print("This command takes no arguments!")
-            return
         elif self.user_id != None:
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}'.format(repr(self.user_id)))
             if req.status_code == 200:
@@ -137,7 +136,6 @@ class Erika(Cmd):
         """
         if len(args) != 0:
             print("This command takes no arguments!")
-            return
         elif self.user_id != None:
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/following'.format(repr(self.user_id)))
             if req.status_code == 200:
@@ -158,7 +156,6 @@ class Erika(Cmd):
         """
         if len(args) != 0:
             print("This command takes no arguments!")
-            return
         elif self.user_id != None:
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/followers'.format(repr(self.user_id)))
             if req.status_code == 200:
@@ -239,7 +236,6 @@ class Erika(Cmd):
         parameters = args.split()
         if len(parameters) != 1:
             print("Provide a userid e.g. follow_user {userid}.")
-            return
         elif self.user_id != None:
             userid = parameters[0]
             payload = {'FollowerID':self.user_id}
@@ -259,7 +255,6 @@ class Erika(Cmd):
         parameters = args.split()
         if len(parameters) != 1:
             print("Provide a userid e.g. unfollow_user {userid}.")
-            return
         elif self.user_id != None:
             userid = parameters[0]
             payload = {'FollowerID':self.user_id}
@@ -296,7 +291,6 @@ class Erika(Cmd):
         """
         if len(args) != 0:
             print("This command takes no arguments!")
-            return
         elif self.user_id != None:
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/topics/following'.format(repr(self.user_id)))
             if req.status_code == 200:
@@ -318,7 +312,6 @@ class Erika(Cmd):
         parameters = args.split()
         if len(parameters) != 1:
             print("Provide a topicid e.g. follow_topic {topicid}.")
-            return
         elif self.user_id != None:
             topicid = parameters[0]
             payload = {'UserID':self.user_id}
@@ -338,7 +331,6 @@ class Erika(Cmd):
         parameters = args.split()
         if len(parameters) != 1:
             print("Provide a topicid e.g. unfollow_topic {topicid}.")
-            return
         elif self.user_id != None:
             topicid = parameters[0]
             payload = {'UserID':self.user_id}
@@ -362,7 +354,6 @@ class Erika(Cmd):
         type_of_post = parameters[0]
         if type_of_post.lower() not in ['text', 'image', 'both']:
             print("Valid post types are text, image, both.")
-            return
         elif self.user_id != None:
             body = ''
             image_url = ''
@@ -377,7 +368,9 @@ class Erika(Cmd):
                 req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/posts/lastpost'.format(repr(self.user_id)))
                 post_info = req.json()
                 print("----------------------------------------------------Post--------------------------------------------------------------------")
-                if type_of_post.lower() == 'image' or type_of_post.lower() == 'both':
+                if type_of_post.lower() == 'image':
+                    print("PostID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['ImageURL'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
+                elif type_of_post.lower() == 'both':
                     print("PostID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['Body'], post_info[0]['ImageURL'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
                 else:
                     print("PostID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['Body'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
@@ -406,7 +399,6 @@ class Erika(Cmd):
                 print(req.text)
         else:
             print("You must be logged in to delete a post!")
-            return
     
     def do_respond_post(self, args):
         """
@@ -437,7 +429,9 @@ class Erika(Cmd):
                 post_info = req.json()
 
                 print("----------------------------------------------------Post--------------------------------------------------------------------")
-                if post_info[0]['Type'].lower() == 'image' or post_info[0]['Type'].lower() == 'both':
+                if post_info[0]['Type'].lower() == 'image':
+                    print("PostID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['ImageURL'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
+                elif post_info[0]['Type'].lower() == 'both':
                     print("PostID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['Body'], post_info[0]['ImageURL'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
                 else:
                     print("PostID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(post_info[0]['PostID'], post_info[0]['Body'], post_info[0]['CreatedBy'], post_info[0]['DateCreated'] + ' ' + post_info[0]['TimeCreated']))
@@ -446,7 +440,9 @@ class Erika(Cmd):
                 response_info = req.json()
                 print("-------------------------------------------------Responses------------------------------------------------------------------")
                 for response in response_info:
-                    if type_of_post.lower() == 'image' or type_of_post.lower() == 'both':
+                    if type_of_post.lower() == 'image':
+                        print("ResponseID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['ImageURL'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
+                    elif type_of_post.lower() == 'both':
                         print("ResponseID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['Body'], response['ImageURL'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
                     else:
                         print("ResponseID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['Body'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
@@ -455,13 +451,86 @@ class Erika(Cmd):
                 print(req.text)
         else:
             print("Log in to respond to a post!")
+    
+    def do_show_post_responses(self, args):
+        """
+        Usage:         show_post_responses {postid}
+        Description:   Respond to a post with text, image, or both.
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a postid e.g. show_post_responses {postid}.")
+            return
+        post_id = parameters[0]
+        req = requests.get('http://127.0.0.1:5000/api/v1/post/{}/responses'.format(post_id))
+        if req.status_code == 200:
+            response_info = req.json()
+            if len(response_info) == 0:
+                print("This post has no responses!")
+                return
+            print("-------------------------------------------------Responses------------------------------------------------------------------")
+            for response in response_info:
+                if response['Type'].lower() == 'image':
+                    print("ResponseID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['ImageURL'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
+                elif response['Type'].lower() == 'both':
+                    print("ResponseID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['Body'], response['ImageURL'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
+                else:
+                    print("ResponseID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(response['ResponseID'], response['Body'], response['CreatedBy'], response['DateCreated'] + ' ' + response['TimeCreated']))
+                print("----------------------------------------------------------------------------------------------------------------------------")
+        else:
+            print(req.text)
+    
+    def do_react_post(self, args):
+        """
+        Usage:         react_post {postid} Like|Dislike|Love|Funny|Sad|WTF
+        Description:   React to a post. Valid reaction types are Like|Dislike|Love|Funny|Sad|WTF
+        """
+        parameters = args.split()
+        if len(parameters) != 2:
+            print("Provide a postid and a valid reaction e.g. react_post {postid} Like|Dislike|Love|Funny|Sad|WTF.")
+        elif self.user_id != None:
+            post_id = parameters[0]
+            reaction = parameters[1]
+            payload = {'UserID':self.user_id, 'Reaction':reaction}
+            req = requests.post('http://127.0.0.1:5000/api/v1/post/{}/react'.format(post_id), json=payload)
+            if req.status_code == 200:
+                print("You reacted to post {} with a {}.".format(post_id, reaction))
+            else:
+                print(req.text)
+        else:
+            print("You must be logged in to react to a post!")
+    
+    def do_show_post_reactions(self, args):
+        """
+        Usage:         show_post_reactions {postid}
+        Description:   Show all reactions to a post and who reacted.
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a postid e.g. show_post_reactions {postid}.")
+            return
+        post_id = parameters[0]
+        req = requests.get('http://127.0.0.1:5000/api/v1/post/{}/react'.format(post_id))
+        if req.status_code == 200:
+            reaction_info = req.json()
+            if len(reaction_info) == 0:
+                print("This post has no reactions!")
+                return
+            print("-------------------------------------------------Reactions------------------------------------------------------------------")
+            for reaction in reaction_info:
+                print("UserID: {}\nReaction: {}".format(reaction['UserID'], reaction['Reaction']))
+                print("----------------------------------------------------------------------------------------------------------------------------")
+        else:
+            print(req.text)
 
     def do_show_my_posts(self, args):
         """
         Usage:         show_my_posts
         Description:   Shows all your own posts. 
         """
-        if self.user_id != None:
+        if len(args) != 0:
+            print("This command takes no arguments!")
+        elif self.user_id != None:
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/posts'.format(repr(self.user_id)))
             post_info = req.json()
             if len(post_info) == 0:
@@ -469,23 +538,24 @@ class Erika(Cmd):
                 return
             print("------------------------------------------------------Posts----------------------------------------------------------------")
             for post in post_info:
-                if post['Type'].lower() == 'image' or post['Type'].lower() == 'both':
+                if post['Type'].lower() == 'image':
+                    print("PostID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
+                elif post['Type'].lower() == 'both':
                     print("PostID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
                 else:
                     print("PostID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
                 print("----------------------------------------------------------------------------------------------------------------------------")
         else:
             print("Log in to view your posts!")
-            return
     
-    def do_show_post_user(self, args):
+    def do_show_user_posts(self, args):
         """
-        Usage:         show_post_user {userid} all|new
+        Usage:         show_user_posts {userid} all|new
         Description:   Shows posts by a user. Viewing new posts requires following user.
         """
         parameters = args.split()
         if len(parameters) != 2:
-            print("Provide a userid and a valid view option e.g. show_post_user {userid} all|new.")
+            print("Provide a userid and a valid view option e.g. show_user_posts {userid} all|new.")
             return
         user_id = parameters[0]
         view_option = parameters[1]
@@ -515,7 +585,9 @@ class Erika(Cmd):
                 return
             print("----------------------------------------------------{} Posts---------------------------------------------------------------".format(view_option.capitalize()))
             for post in post_info:
-                if post['Type'].lower() == 'image' or post['Type'].lower() == 'both':
+                if post['Type'].lower() == 'image':
+                    print("PostID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
+                elif post['Type'].lower() == 'both':
                     print("PostID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
                 else:
                     print("PostID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
@@ -523,15 +595,14 @@ class Erika(Cmd):
         else:
             print(req.text)
 
-    
-    def do_show_post_topic(self, args):
+    def do_show_topic_posts(self, args):
         """
-        Usage:         show_post_topic {topicid} all|new
+        Usage:         show_topic_posts {topicid} all|new
         Description:   Shows posts in a topic. Viewing new posts requires following topic.
         """
         parameters = args.split()
         if len(parameters) != 2:
-            print("Provide a topicid and a valid view option e.g. show_post_topic {topicid} all|new.")
+            print("Provide a topicid and a valid view option e.g. show_topic_posts {topicid} all|new.")
             return
 
         topic_id = parameters[0]
@@ -560,7 +631,9 @@ class Erika(Cmd):
                 return
             print("----------------------------------------------------{} Posts---------------------------------------------------------------".format(view_option.capitalize()))
             for post in post_info:
-                if post['Type'].lower() == 'image' or post['Type'].lower() == 'both':
+                if post['Type'].lower() == 'image':
+                    print("PostID: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
+                elif post['Type'].lower() == 'both':
                     print("PostID: {}\nBody: {}\nImageURL: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['ImageURL'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
                 else:
                     print("PostID: {}\nBody: {}\nCreatedBy: {}\nCreatedOn: {}".format(post['PostID'], post['Body'], post['CreatedBy'], post['DateCreated'] + ' ' + post['TimeCreated']))
@@ -568,6 +641,136 @@ class Erika(Cmd):
         else:
             print(req.text)
     
+    def do_show_groups(self, args):
+        """
+        Usage:         show_groups
+        Description:   Shows all available groups on Erika. 
+        """
+        if len(args) != 0:
+            print("This command takes no arguments!")
+            return
+        req = requests.get('http://127.0.0.1:5000/api/v1/group')
+        group_info = req.json()
+        if len(group_info) == 0:
+            print("No groups currently created!")
+            return
+        print("------------------------------------------------------Groups---------------------------------------------------------------")
+        for group in group_info:
+            print("GroupID: {}\nAbout: {}\nCreatedBy: {}".format(group['GroupID'], group['About'], group['CreatedBy']))
+            print("----------------------------------------------------------------------------------------------------------------------------")
+    
+    def do_create_group(self, args):
+        """
+        Usage:         create_group {groupid}
+        Description:   Shows all available groups on Erika. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a groupid e.g. create_group {groupid}.")
+        elif self.user_id != None:
+            group_id = parameters[0] 
+            if not group_id.isalnum():
+                print("Only alphanumeric characters are allowed in groupid!") 
+                return
+            about = input("What is this group about? ")
+            payload = {'GroupID':group_id, 'About':about, 'CreatedBy':self.user_id}
+            req = req = requests.post('http://127.0.0.1:5000/api/v1/group', json=payload)
+            if req.status_code == 200:
+                print("Group successfully created!")
+            else:
+                print(req.text)
+        else:
+            print("Log in to create a group!")
+    
+    def do_join_group(self, args):
+        """
+        Usage:         join_group {groupid}
+        Description:   Join a group. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a groupid e.g. join_group {groupid}.")
+        elif self.user_id != None:
+            group_id = parameters[0] 
+            if not group_id.isalnum():
+                print("Format is wrong, groupid must be alphanumeric!") 
+                return 
+            payload = {'UserID':self.user_id}
+            req = req = requests.post('http://127.0.0.1:5000/api/v1/group/{}/join'.format(repr(group_id)), json=payload)
+            if req.status_code == 200:
+                print("Group successfully joined!")
+            else:
+                print(req.text)
+        else:
+            print("Log in to create a group!")
+    
+    def do_show_members_group(self, args):
+        """
+        Usage:         show_members_group {groupid}
+        Description:   Show the members of a group. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a groupid e.g. join_group {groupid}.")
+            return
+        group_id = parameters[0] 
+        if not group_id.isalnum():
+            print("Format is wrong, groupid must be alphanumeric!") 
+            return 
+        req = requests.get('http://127.0.0.1:5000/api/v1/group/{}/members'.format(repr(group_id)))
+        if req.status_code == 200:
+            members_info = req.json()
+            print("--------------------------------------------------Group Members-----------------------------------------------------------")
+            for member in members_info:
+                print(member['UserID'][0])
+            print("----------------------------------------------------------------------------------------------------------------------------")
+        else:
+            print(req.text)
+    
+    def do_leave_group(self, args):
+        """
+        Usage:         leave_group {groupid}
+        Description:   Leave a group. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a groupid e.g. join_group {groupid}.")
+        elif self.user_id != None:
+            group_id = parameters[0] 
+            if not group_id.isalnum():
+                print("Format is wrong, groupid must be alphanumeric!") 
+                return 
+            payload = {'UserID':self.user_id}
+            req = req = requests.post('http://127.0.0.1:5000/api/v1/group/{}/leave'.format(repr(group_id)), json=payload)
+            if req.status_code == 200:
+                print("Group successfully left!")
+            else:
+                print(req.text)
+        else:
+            print("Log in to leave a group!")
+    
+    def do_delete_group(self, args):
+        """
+        Usage:         delete_group {groupid}
+        Description:   Delete a group. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a groupid e.g. join_group {groupid}.")
+        elif self.user_id != None:
+            group_id = parameters[0] 
+            if not group_id.isalnum():
+                print("Format is wrong, groupid must be alphanumeric!") 
+                return 
+            payload = {'UserID':self.user_id}
+            req = req = requests.delete('http://127.0.0.1:5000/api/v1/group/{}'.format(repr(group_id)), json=payload)
+            if req.status_code == 200:
+                print("Group successfully deleted!")
+            else:
+                print(req.text)
+        else:
+            print("Log in to delete a group!")
+        
     def do_open_link(self, args):
         """
         Usage:         open_link {link}
@@ -576,7 +779,6 @@ class Erika(Cmd):
         parameters = args.split()
         if len(parameters) != 1:
             print("Provide a link to open e.g. open_link {link}.")
-            return
         else:
             open(parameters[0])
     

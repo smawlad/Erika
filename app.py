@@ -121,7 +121,7 @@ class Erika(Cmd):
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}'.format(repr(self.user_id)))
             if req.status_code == 200:
                 user_info = req.json()
-                print("----------------------------------------------------------------------------------------------------------------------------")
+                print("----------------------------------------------------You---------------------------------------------------------------------")
                 print("UserID: {}\nBirthday: {}\nBio: {}".format(user_info[0]['UserID'], user_info[0]['Birthday'], user_info[0]['Bio']))
                 print("----------------------------------------------------------------------------------------------------------------------------")
             else:
@@ -140,6 +140,9 @@ class Erika(Cmd):
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/following'.format(repr(self.user_id)))
             if req.status_code == 200:
                 user_info = req.json()
+                if len(user_info) == 0:
+                    print("You don't follow anybody!")
+                    return
                 print("-------------------------------------------------Following------------------------------------------------------------------")
                 for user in user_info:
                     print(user['FollowingID'])
@@ -160,6 +163,9 @@ class Erika(Cmd):
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/followers'.format(repr(self.user_id)))
             if req.status_code == 200:
                 user_info = req.json()
+                if len(user_info) == 0:
+                    print("You don't have any followers!")
+                    return
                 print("-------------------------------------------------Followers------------------------------------------------------------------")
                 for user in user_info:
                     print(user['FollowerID'])
@@ -201,6 +207,9 @@ class Erika(Cmd):
         req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/following'.format(repr(userid)))
         if req.status_code == 200:
             user_info = req.json()
+            if len(user_info) == 0:
+                print("{} doesn't follow anybody!".format(repr(userid)))
+                return
             print("-------------------------------------------------Following------------------------------------------------------------------")
             for user in user_info:
                 print(user['FollowingID'])
@@ -221,6 +230,9 @@ class Erika(Cmd):
         req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/followers'.format(repr(userid)))
         if req.status_code == 200:
             user_info = req.json()
+            if len(user_info) == 0:
+                print("{} doesn't have any followers!".format(repr(userid)))
+                return
             print("-------------------------------------------------Followers------------------------------------------------------------------")
             for user in user_info:
                 print(user['FollowerID'])
@@ -277,6 +289,9 @@ class Erika(Cmd):
         req = requests.get('http://127.0.0.1:5000/api/v1/topics')
         if req.status_code == 200:
             topic_info = req.json()
+            if len(topic_info) == 0:
+                print("There are no topics as of yet!")
+                return
             print("---------------------------------------------------Topics-------------------------------------------------------------------")
             for topic in topic_info:
                 print(topic['TopicID'])
@@ -295,6 +310,9 @@ class Erika(Cmd):
             req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/topics/following'.format(repr(self.user_id)))
             if req.status_code == 200:
                 topic_info = req.json()
+                if len(topic_info) == 0:
+                    print("You don't follow any topics!")
+                    return
                 print("-------------------------------------------------Following------------------------------------------------------------------")
                 for topic in topic_info:
                     print(topic['TopicID'])
@@ -720,6 +738,9 @@ class Erika(Cmd):
         req = requests.get('http://127.0.0.1:5000/api/v1/group/{}/members'.format(repr(group_id)))
         if req.status_code == 200:
             members_info = req.json()
+            if len(members_info) == 0:
+                print("There are no members as of yet!")
+                return
             print("--------------------------------------------------Group Members-----------------------------------------------------------")
             for member in members_info:
                 print(member['UserID'][0])
@@ -770,6 +791,75 @@ class Erika(Cmd):
                 print(req.text)
         else:
             print("Log in to delete a group!")
+    
+    def do_show_active_conversations(self, args):
+        """
+        Usage:         show_active_conversations
+        Description:   Show all the people that you are having conversations with. 
+        """
+        parameters = args.split()
+        if len(parameters) != 0:
+            print("This command takes no arguments!")
+        elif self.user_id != None:
+            sender_id = self.user_id
+            payload = {'SenderID':sender_id}
+            req = requests.get('http://127.0.0.1:5000/api/v1/user/activeconversations', json=payload)
+            conversation_info = req.json()
+            if len(conversation_info) == 0:
+                print("No active conversations at the moment!")
+            else:
+                print("----------------------------------------------------Conversation------------------------------------------------------------")
+                for conversation in conversation_info:
+                    print("ConversationID: {}\nInitiator: {}\nReplier: {}".format(conversation['ConversationID'], conversation['Initiator'], conversation['Replier']))
+                    print("----------------------------------------------------------------------------------------------------------------------------")
+        else:
+            print("Log in to view active conversations!")
+
+    def do_show_conversation(self, args):
+        """
+        Usage:         show_conversation {userid}
+        Description:   Show a conversation between you and a friend. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a userid e.g. show_conversation {userid}.")
+        elif self.user_id != None: 
+            sender_id = self.user_id
+            receiver_id = parameters[0]
+            payload = {'SenderID':sender_id}
+            req = requests.get('http://127.0.0.1:5000/api/v1/user/{}/conversation'.format(repr(receiver_id)), json=payload)
+            if req.status_code == 200:
+                conversation_info = req.json()
+                print("----------------------------------------------------Conversation------------------------------------------------------------")
+                for message in conversation_info:
+                    print("MessageID: {}\nFrom: {}\nBody: {}\nSentAt: {}".format(message['MessageID'], message['From'], message['Body'], message['DateSent'] + ' ' + message['TimeSent']))
+                    print("----------------------------------------------------------------------------------------------------------------------------")
+            else:
+                print(req.text)
+        else:
+            print("Log in to view a conversation!")
+
+    def do_message_user(self, args):
+        """
+        Usage:         message_user {userid}
+        Description:   Message a user you follow who follows you back. 
+        """
+        parameters = args.split()
+        if len(parameters) != 1:
+            print("Provide a userid e.g. message_user {userid}.")
+        elif self.user_id != None: 
+            sender_id = self.user_id
+            receiver_id = parameters[0]
+            datetime_arr = datetime.now().strftime("%d/%m/%Y %H:%M:%S").split(' ')
+            body = input("Enter your message body: ")
+            payload = {'SenderID':sender_id, 'Body':body, 'DateSent':datetime_arr[0], 'TimeSent':datetime_arr[1]}
+            req = requests.post('http://127.0.0.1:5000/api/v1/user/{}/message'.format(repr(receiver_id)), json=payload)
+            if req.status_code == 200:
+                print("Message sent to user {}.".format(receiver_id))
+            else:
+                print(req.text)
+        else:
+            print("Log in to message a user!")
         
     def do_open_link(self, args):
         """

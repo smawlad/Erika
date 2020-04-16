@@ -13,7 +13,7 @@ app.config['MYSQL_DB'] = 'ErikaDB'
 
 mysql = MySQL(app)
 
-# global variables to hold last read posts by user/topic that someone follows, not the best approach but seems to work
+# global variables to hold last read posts by user/topic that someone follows, not the best approach but seems to work for simple cases
 last_read_post_id_user = -1
 last_read_post_id_topic = -1
 
@@ -532,6 +532,40 @@ def leave_group(group_id):
     query = "delete from UserJoinsGroup where UserID={} and GroupID={}".format(repr(input_json['UserID']), group_id)
     execute_and_commit(query)
     return 'OK'
+
+@app.route('/api/v1/user/<user_id>/conversation', methods=['GET'])
+def get_conversation(user_id):
+    input_json = request.get_json(force=True)
+    if not does_tuple_exist("Conversation", ["User1", "User2"], [repr(input_json['SenderID']), user_id]) \
+        and not does_tuple_exist("Conversation", ["User1", "User2"], [user_id, repr(input_json['SenderID'])]):
+        return "Conversation does not exist!", 400
+    query = '''select MessageID, SenderID, Body, YearSent, MonthSent, DaySent, HourSent, MinuteSent, SecondSent from
+            (select * from Message inner join Conversation using(ConversationID) where User1={} and User2={} or User1={} and User2={}) as temp'''.format(user_id, repr(input_json['SenderID']), repr(input_json['SenderID']), user_id)
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        message_id, sender_id, body, year_sent, month_sent, day_sent, hour_sent, minute_sent, second_sent = rv
+        date_sent = create_date_str(year_sent, month_sent, day_sent)
+        time_sent = create_time_str(hour_sent, minute_sent, second_sent)
+        content = {'MessageID': message_id, 'From':sender_id, 'Body':body, 'DateSent':date_sent, 'TimeSent':time_sent}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
+
+@app.route('/api/v1/user/activeconversations', methods=['GET'])
+def get_conversations():
+    input_json = request.get_json(force=True)
+    query = "select * from Conversation where User1={} or User2={}".format(repr(input_json['SenderID']), repr(input_json['SenderID']))
+    rvs = select_rows(query)
+    payload = []
+    content = {}
+    for rv in rvs:
+        conversation_id, user1, user2 = rv
+        content = {'ConversationID': conversation_id, 'Initiator':user1, 'Replier':user2}
+        payload.append(content)
+        content = {}
+    return jsonify(payload)
 
 @app.route('/api/v1/user/<user_id>/message', methods=['POST'])
 def message_user(user_id):   

@@ -6,7 +6,7 @@ from webbrowser import open
 
 class Erika(Cmd):
     prompt = 'erika> '
-    intro = "Welcome to Erika, a simple social command line social network! Type help for a list of commands."
+    intro = "Welcome to Erika, a simple command line social network! Type help for a list of commands."
 
     def __init__(self):
         super().__init__()
@@ -73,7 +73,7 @@ class Erika(Cmd):
 
         password = getpass("Enter a password: ") 
         if not password.isalnum():
-            print("Only alphanumeric characters are allowed in userid!") 
+            print("Only alphanumeric characters are allowed in password!") 
             return
 
         birthday = input("Enter your birthdate (dd/mm/yyyy): ") 

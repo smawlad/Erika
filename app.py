@@ -377,8 +377,7 @@ class Erika(Cmd):
             image_url = ''
             if type_of_post.lower() == 'image' or type_of_post.lower() == 'both':
                 image_url = input("Provide a URL to your image: ")
-            if type_of_post.lower() == 'text' or type_of_post.lower() == 'both':
-                body = input("Provide a post body: ")
+            body = input("Provide a post body: ")
             datetime_arr = datetime.now().strftime("%d/%m/%Y %H:%M:%S").split(' ')
             payload = {'Type':type_of_post, 'Body':body, 'ImageURL':image_url, 'CreatedBy':self.user_id, 'DateCreated':datetime_arr[0], 'TimeCreated':datetime_arr[1]}
             req = requests.post('http://127.0.0.1:5000/api/v1/post', json=payload)

@@ -6,7 +6,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 
 DROP TABLE IF EXISTS `User`;
 CREATE TABLE `User` (
-    `UserID` VARCHAR(10) NOT NULL,
+    `UserID` VARCHAR(255) NOT NULL,
     `Password` VARCHAR(255) NOT NULL,
     `BirthYear` INT NOT NULL,
     `BirthMonth` INT NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE `Post` (
     `Type` ENUM ('Text', 'Image', 'Both') NOT NULL,
     `Body` VARCHAR(1000) NOT NULL,
     `ImageURL` VARCHAR(255) DEFAULT NULL,
-    `CreatedBy` VARCHAR(10) NOT NULL,
+    `CreatedBy` VARCHAR(255) NOT NULL,
     `YearCreated` INT NOT NULL,
     `MonthCreated` INT NOT NULL,
     `DayCreated` INT NOT NULL,
@@ -42,7 +42,7 @@ DROP TABLE IF EXISTS `UserGroup`;
 CREATE TABLE `UserGroup` (
 	`GroupID` VARCHAR(255) NOT NULL,
     `About` VARCHAR(255) NOT NULL,
-    `CreatedBy` VARCHAR(10) NOT NULL,
+    `CreatedBy` VARCHAR(255) NOT NULL,
     PRIMARY KEY	(`GroupID`),
     FOREIGN KEY (`CreatedBy`) REFERENCES User(`UserID`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -50,8 +50,8 @@ CREATE TABLE `UserGroup` (
 DROP TABLE IF EXISTS `Conversation`;
 CREATE TABLE `Conversation` (
 	`ConversationID` INT NOT NULL AUTO_INCREMENT,
-	`User1` VARCHAR(10) NOT NULL,
-    `User2` VARCHAR(10) NOT NULL,
+	`User1` VARCHAR(255) NOT NULL,
+    `User2` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`ConversationID`),
     FOREIGN KEY (`User1`) REFERENCES User(`UserID`) ON DELETE CASCADE,
     FOREIGN KEY (`User2`) REFERENCES User(`UserID`) ON DELETE CASCADE
@@ -62,7 +62,7 @@ DROP TABLE IF EXISTS `Message`;
 CREATE TABLE `Message` (
 	`ConversationID` INT NOT NULL,
     `MessageID` INT NOT NULL AUTO_INCREMENT,
-    `SenderID` VARCHAR(10) NOT NULL,
+    `SenderID` VARCHAR(255) NOT NULL,
     `Body` VARCHAR(1000) NOT NULL,
     `YearSent` INT NOT NULL,
     `MonthSent` INT NOT NULL,
@@ -77,8 +77,8 @@ CREATE TABLE `Message` (
 
 DROP TABLE IF EXISTS `UserFollowsUser`;
 CREATE TABLE `UserFollowsUser` (
-	`FollowerID` VARCHAR(10) NOT NULL,
-    `FollowingID` VARCHAR(10) NOT NULL,
+	`FollowerID` VARCHAR(255) NOT NULL,
+    `FollowingID` VARCHAR(255) NOT NULL,
     `LastReadPost` INT DEFAULT -1,
     PRIMARY KEY (`FollowerID`, `FollowingID`),
     FOREIGN KEY (`FollowerID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
@@ -87,7 +87,7 @@ CREATE TABLE `UserFollowsUser` (
 
 DROP TABLE IF EXISTS `UserFollowsTopic`;
 CREATE TABLE `UserFollowsTopic` (
-	`FollowerID` VARCHAR(10) NOT NULL,
+	`FollowerID` VARCHAR(255) NOT NULL,
     `TopicID` VARCHAR(255) NOT NULL,
     `LastReadPost` INT DEFAULT -1,
     PRIMARY KEY (`FollowerID`, `TopicID`),
@@ -97,7 +97,7 @@ CREATE TABLE `UserFollowsTopic` (
 
 DROP TABLE IF EXISTS `UserJoinsGroup`;
 CREATE TABLE `UserJoinsGroup` (
-	`UserID` VARCHAR(10) NOT NULL,
+	`UserID` VARCHAR(255) NOT NULL,
     `GroupID` VARCHAR(255) NOT NULL,
     PRIMARY KEY (`UserID`, `GroupID`),
     FOREIGN KEY (`UserID`) REFERENCES User(`UserID`) ON DELETE CASCADE,
@@ -106,7 +106,7 @@ CREATE TABLE `UserJoinsGroup` (
 
 DROP TABLE IF EXISTS `UserReactsToPost`;
 CREATE TABLE `UserReactsToPost` (
-	`UserID` VARCHAR(10) NOT NULL,
+	`UserID` VARCHAR(255) NOT NULL,
     `PostID` INT NOT NULL,
     `Reaction` ENUM('Like', 'Dislike', 'Love', 'Funny', 'Sad', 'WTF') DEFAULT NULL,
     PRIMARY KEY (`UserID`, `PostID`),

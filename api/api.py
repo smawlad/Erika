@@ -7,8 +7,8 @@ import unicodedata
 app = Flask(__name__)
 app.config['JSON_SORT_KEYS'] = False
 app.config['MYSQL_HOST'] = '192.168.56.101'
-app.config['MYSQL_USER'] = 'sawlad'
-app.config['MYSQL_PASSWORD'] = 'sadat1998'
+app.config['MYSQL_USER'] = 'usebetterauth'
+app.config['MYSQL_PASSWORD'] = 'dummy123'
 app.config['MYSQL_DB'] = 'ErikaDB'
 
 mysql = MySQL(app)
